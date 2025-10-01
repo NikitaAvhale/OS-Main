@@ -1,0 +1,118 @@
+ Q.1Write a program to create child process using fork().The parent should gotosleep state and
+ child process should begin its execution. In the child process, use execl() to execute the ls"
+ command.
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdlib.h>
+
+int main() {
+    pid_t pid;
+
+    pid = fork();  // Create child process
+
+    if (pid < 0) {
+        perror("Fork failed");
+        exit(1);
+    }
+    else if (pid == 0) {
+        
+        printf("Child process executing 'ls' command:\n");
+        execl("/bin/ls", "ls", "-l", NULL);  // Replace child with ls
+        perror("execl failed");  // Only runs if execl fails
+    }
+    else {
+                printf("Parent process going to sleep...\n");
+        sleep(5);  // Sleep for 5 seconds
+        printf("Parent process woke up.\n");
+    }
+
+    return 0;
+}
+
+
+ Q.2 Write the simulation program using FCFS. The arrival time andfirst CPU bursts of different
+ jobs should be input to the system.Assumethe fixed I/O waiting time (2units). The next CPU
+ burst should be generated using random function. Theoutput should givethe Ganttchart,
+ TurnaroundTimeandWaiting time foreach process andaverage times
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX 10
+#define IO_WAIT 2
+
+typedef struct {
+    int pid;
+    int arrival;
+    int cpu1;
+    int cpu2;
+    int start;
+    int finish;
+    int turnaround;
+    int waiting;
+} Process;
+
+int main() {
+    Process p[MAX];
+    int n, i;
+    float avg_tat = 0, avg_wt = 0;
+    int current_time = 0;
+
+    srand(time(NULL)); 
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+       for (i = 0; i < n; i++) {
+        p[i].pid = i;
+        printf("Process P%d - Arrival Time: ", i);
+        scanf("%d", &p[i].arrival);
+        printf("Process P%d - First CPU Burst: ", i);
+        scanf("%d", &p[i].cpu1);
+        p[i].cpu2 = rand() % 5 + 1; // Random burst between 1–5
+    }
+
+    
+    for (i = 0; i < n - 1; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (p[i].arrival > p[j].arrival) {
+                Process temp = p[i];
+                p[i] = p[j];
+                p[j] = temp;
+            }
+        }
+    }
+
+    printf("\nGantt Chart:\n");
+
+    for (i = 0; i < n; i++) {
+        if (current_time < p[i].arrival)
+            current_time = p[i].arrival;
+
+        p[i].start = current_time;
+        current_time += p[i].cpu1 + IO_WAIT + p[i].cpu2;
+        p[i].finish = current_time;
+
+        p[i].turnaround = p[i].finish - p[i].arrival;
+        p[i].waiting = p[i].turnaround - (p[i].cpu1 + p[i].cpu2 + IO_WAIT);
+
+        avg_tat += p[i].turnaround;
+        avg_wt += p[i].waiting;
+
+        printf("| P%d (%d-%d) ", p[i].pid, p[i].start, p[i].finish);
+    }
+    printf("|\n");
+
+       printf("\n%-5s %-8s %-8s %-8s %-8s %-8s %-8s\n", "PID", "Arrival", "CPU1", "CPU2", "Finish", "TAT", "WT");
+    for (i = 0; i < n; i++) {
+        printf("%-5d %-8d %-8d %-8d %-8d %-8d %-8d\n",
+               p[i].pid, p[i].arrival, p[i].cpu1, p[i].cpu2,
+               p[i].finish, p[i].turnaround, p[i].waiting);
+    }
+
+    printf("\nAverage Turnaround Time: %.2f", avg_tat / n);
+    printf("\nAverage Waiting Time: %.2f\n", avg_wt / n);
+
+    return 0;
+}
+ 

@@ -1,0 +1,125 @@
+ Q.1Write aprogram that demonstrates the use of nice()system call. After a child process is
+ started using fork), assign higher priority to the child using nice() system call.
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/resource.h>
+
+int main() {
+    pid_t pid;
+
+    pid = fork(); 
+    if (pid < 0) {
+        perror("Fork failed");
+        exit(1);
+    }
+    else if (pid == 0) {
+                printf("Child process (PID: %d) started.\n", getpid());
+
+        int old_nice = getpriority(PRIO_PROCESS, 0);
+        printf("Child's original nice value: %d\n", old_nice);
+
+        // Assign higher priority (lower nice value)
+        int new_nice = nice(-5); // Decrease nice value by 5
+        printf("Child's new nice value: %d\n", getpriority(PRIO_PROCESS, 0));
+
+               for (int i = 0; i < 5; i++) {
+            printf("Child working... %d\n", i + 1);
+            sleep(1);
+        }
+    }
+    else {
+               printf("Parent process (PID: %d) waiting for child...\n", getpid());
+        sleep(7); // Wait for child to finish
+        printf("Parent process exiting.\n");
+    }
+
+    return 0;
+}
+
+ Q.2Write the simulation program using SJF(non-preemptive). The arrival time and first CPU bursts of
+ differentjobs should be input to the system. TheAssumethe fixed I/O waiting time (2units).Thenext
+ CPU burst should be generated using random function. The output should givethe Gantt chart,
+ TurnaroundTime andWaiting time for each process and average times.
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX 20
+#define IO_WAIT 2
+
+typedef struct {
+    int pid;
+    int arrival;
+    int cpu1;
+    int cpu2;
+    int start;
+    int finish;
+    int turnaround;
+    int waiting;
+    int completed;
+} Process;
+
+int main() {
+    Process p[MAX];
+    int n, i, time = 0, completed = 0;
+    float total_tat = 0, total_wt = 0;
+
+    srand(time(NULL));     printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+        for (i = 0; i < n; i++) {
+        p[i].pid = i;
+        printf("Process P%d - Arrival Time: ", i);
+        scanf("%d", &p[i].arrival);
+        printf("Process P%d - First CPU Burst: ", i);
+        scanf("%d", &p[i].cpu1);
+        p[i].cpu2 = rand() % 5 + 1; // Random burst between 1–5
+        p[i].completed = 0;
+    }
+
+    printf("\nGantt Chart:\n");
+
+    while (completed < n) {
+        int idx = -1;
+        int min_burst = 9999;
+
+                for (i = 0; i < n; i++) {
+            if (p[i].arrival <= time && !p[i].completed && p[i].cpu1 < min_burst) {
+                min_burst = p[i].cpu1;
+                idx = i;
+            }
+        }
+
+        if (idx == -1) {
+            time++;             continue;
+        }
+
+        p[idx].start = time;
+        time += p[idx].cpu1 + IO_WAIT + p[idx].cpu2;
+        p[idx].finish = time;
+        p[idx].turnaround = p[idx].finish - p[idx].arrival;
+        p[idx].waiting = p[idx].turnaround - (p[idx].cpu1 + p[idx].cpu2 + IO_WAIT);
+        p[idx].completed = 1;
+
+        total_tat += p[idx].turnaround;
+        total_wt += p[idx].waiting;
+
+        printf("| P%d (%d-%d) ", p[idx].pid, p[idx].start, p[idx].finish);
+        completed++;
+    }
+    printf("|\n");
+
+        printf("\n%-5s %-8s %-8s %-8s %-8s %-8s %-8s\n", "PID", "Arrival", "CPU1", "CPU2", "Finish", "TAT", "WT");
+    for (i = 0; i < n; i++) {
+        printf("%-5d %-8d %-8d %-8d %-8d %-8d %-8d\n",
+               p[i].pid, p[i].arrival, p[i].cpu1, p[i].cpu2,
+               p[i].finish, p[i].turnaround, p[i].waiting);
+    }
+
+    printf("\nAverage Turnaround Time: %.2f", total_tat / n);
+    printf("\nAverage Waiting Time: %.2f\n", total_wt / n);
+
+    return 0;
+}

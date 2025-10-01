@@ -1,0 +1,105 @@
+ Q.1Write the program to calculate minimum number of resources needed to avoid
+ deadlock. 
+#include <stdio.h>
+
+int main() {
+    int P, M, R;
+
+    printf("Enter number of processes (P): ");
+    scanf("%d", &P);
+
+    printf("Enter maximum resources a process may request (M): ");
+    scanf("%d", &M);
+
+    // Apply formula: R = P × (M - 1) + 1
+    R = P * (M - 1) + 1;
+
+    printf("\nMinimum number of resources required to avoid deadlock: %d\n", R);
+
+    return 0;
+}
+Q.2 Write the simulation program using FCFS. The arrival time and first CPU bursts of different
+ jobsshould be input to the system. Assume the fixed T/O waiting time (2units). Thenext
+ CPUburst should be generated using random function. The output should give the Gantt
+ chart,Turnaround Time andWaiting time for cach process andaverage
+ times.
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX 20
+#define IO_WAIT 2
+
+typedef struct {
+    int pid;
+    int arrival;
+    int cpu1;
+    int cpu2;
+    int start;
+    int finish;
+    int turnaround;
+    int waiting;
+} Process;
+
+void sortByArrival(Process p[], int n) {
+    for (int i = 0; i < n - 1; i++)
+        for (int j = i + 1; j < n; j++)
+            if (p[i].arrival > p[j].arrival) {
+                Process temp = p[i];
+                p[i] = p[j];
+                p[j] = temp;
+            }
+}
+
+int main() {
+    Process p[MAX];
+    int n, i;
+    int current_time = 0;
+    float total_tat = 0, total_wt = 0;
+
+    srand(time(NULL)); 
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+        for (i = 0; i < n; i++) {
+        p[i].pid = i;
+        printf("Process P%d - Arrival Time: ", i);
+        scanf("%d", &p[i].arrival);
+        printf("Process P%d - First CPU Burst: ", i);
+        scanf("%d", &p[i].cpu1);
+        p[i].cpu2 = rand() % 5 + 1;     }
+
+    sortByArrival(p, n);
+
+    printf("\nGantt Chart:\n");
+
+    for (i = 0; i < n; i++) {
+        if (current_time < p[i].arrival)
+            current_time = p[i].arrival;
+
+        p[i].start = current_time;
+        current_time += p[i].cpu1 + IO_WAIT + p[i].cpu2;
+        p[i].finish = current_time;
+
+        p[i].turnaround = p[i].finish - p[i].arrival;
+        p[i].waiting = p[i].turnaround - (p[i].cpu1 + p[i].cpu2 + IO_WAIT);
+
+        total_tat += p[i].turnaround;
+        total_wt += p[i].waiting;
+
+        printf("| P%d (%d-%d) ", p[i].pid, p[i].start, p[i].finish);
+    }
+    printf("|\n");
+
+        printf("\n%-5s %-8s %-8s %-8s %-8s %-8s %-8s\n", "PID", "Arrival", "CPU1", "CPU2", "Finish", "TAT", "WT");
+    for (i = 0; i < n; i++) {
+        printf("%-5d %-8d %-8d %-8d %-8d %-8d %-8d\n",
+               p[i].pid, p[i].arrival, p[i].cpu1, p[i].cpu2,
+               p[i].finish, p[i].turnaround, p[i].waiting);
+    }
+
+    printf("\nAverage Turnaround Time: %.2f", total_tat / n);
+    printf("\nAverage Waiting Time: %.2f\n", total_wt / n);
+
+    return 0;
+}

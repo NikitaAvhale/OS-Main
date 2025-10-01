@@ -1,0 +1,86 @@
+Q.1 Writea programthat demonstrates the use of nice() systemcall. After a child process is started using fork), assign higher priority to the child using nice)system call
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+int main()
+{	
+int pid,retnice;
+pid=fork();
+for(;;)
+{
+if(pid==0)
+{
+retnice=nice(-5);
+printf("Child get higher CPU priority %d\n",retnice);
+sleep(1);
+}
+else 
+{
+retnice=nice(4);
+printf("Parent get lower CPU priority %d\n",retnice);
+sleep(1);
+}
+}
+}
+Q.2Write the simulation program to implementdemand paging and show the page scheduling and total number of page faultsforthe following given page reference string. Give input n=3 as the number of memory frames, Reference String :3,4, 5,6,3,4,7, 3,4,5,6,7,2,4, 6
+ ImplementFIFO
+#include <stdio.h>
+#define SIZE 15  // Length of reference string
+
+int main() {
+    int n = 3;  // Number of frames
+    int ref_str[SIZE] = {3, 4, 5, 6, 3, 4, 7, 3, 4, 5, 6, 7, 2, 4, 6};
+    int frames[3] = {-1, -1, -1};  // Initialize frames
+    int page_faults = 0;
+    int index = 0;  // FIFO pointer
+
+    printf("Page Reference String:\n");
+    for (int i = 0; i < SIZE; i++) {
+        printf("%d ", ref_str[i]);
+    }
+    printf("\n\nPage Scheduling (FIFO):\n");
+
+    for (int i = 0; i < SIZE; i++) {
+        int page = ref_str[i];
+        int found = 0;
+
+        // Check if page is already in frame
+        for (int j = 0; j < n; j++) {
+            if (frames[j] == page) {
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            // Page fault occurs
+            frames[index] = page;
+            index = (index + 1) % n;
+            page_faults++;
+
+            // Print current frame state
+            printf("Page %d -> [", page);
+            for (int j = 0; j < n; j++) {
+                if (frames[j] != -1)
+                    printf("%d ", frames[j]);
+                else
+                    printf("_ ");
+            }
+            printf("] Page Fault\n");
+        } else {
+            // No page fault
+            printf("Page %d -> [", page);
+            for (int j = 0; j < n; j++) {
+                if (frames[j] != -1)
+                    printf("%d ", frames[j]);
+                else
+                    printf("_ ");
+            }
+            printf("] No Fault\n");
+        }
+    }
+
+    printf("\nTotal Page Faults: %d\n", page_faults);
+    return 0;
+}
+

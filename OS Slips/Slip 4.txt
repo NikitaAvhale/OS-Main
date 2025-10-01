@@ -1,0 +1,118 @@
+Slip 4
+Q.1Write aprogram to illustrate the concept of orphan process [10marks]  (Using fork)and sleep))
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+int main() {
+    pid_t pid;
+ pid = fork();   
+if (pid > 0) { 
+        printf("Parent process (pid %d)\n", getpid());
+        printf("Parent will exit now...\n");
+    } 
+    else if (pid == 0) { 
+    sleep(5);  
+        printf("Child process (PID: %d) became orphan, adopted by init/systemd. Parent PID now: %d\n",
+               getpid(), getppid());
+    } 
+    else {
+     printf("Fork failed!\n");
+    }
+    return 0;
+}
+Q.2Write the program to simulate Non-preemptive Priority scheduling. The arrival time andfirst CPU burst and priority for differentn number of processes should be input to the algorithm. Assume the fixed IOwaiting time (2units). The next CPU-burstshould be generated randomly. Theoutput should giveGantt chart,turnaround time and waiting time foreach process. Also find the averag waiting ime and tumaroundtime..
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <time.h>
+
+#define MAX 100
+
+typedef struct {
+    int pid;
+    int arrival;
+    int burst1;
+    int burst2;
+    int priority;
+    int start;
+    int completion;
+    int turnaround;
+    int waiting;
+    bool completed;
+} Process;
+
+void sortByPriority(Process p[], int n, int current_time) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = i+1; j < n; j++) {
+            if (!p[i].completed && !p[j].completed &&
+                p[i].arrival <= current_time && p[j].arrival <= current_time &&
+                p[i].priority > p[j].priority) {
+                Process temp = p[i];
+                p[i] = p[j];
+                p[j] = temp;
+            }
+        }
+    }
+}
+
+int main() {
+    int n, time = 0, completed = 0;
+    Process p[MAX];
+    int gantt[MAX], gantt_time[MAX], g_index = 0;
+    const int io_wait = 2;
+srand(time(NULL)); 
+  printf("Enter number of processes: ");
+    scanf("%d", &n);
+    for (int i = 0; i < n; i++) {
+        p[i].pid = i;
+        printf("Arrival time for P%d: ", i);
+        scanf("%d", &p[i].arrival);
+        printf("First CPU burst for P%d: ", i);
+        scanf("%d", &p[i].burst1);
+        printf("Priority for P%d (lower value = higher priority): ", i);
+        scanf("%d", &p[i].priority);
+        p[i].burst2 = rand() % 10 + 1; // Random burst2 between 1 and 10
+        p[i].completed = false;
+    }
+ while (completed < n) {
+        int idx = -1;
+        int highest_priority = 1e9;
+        for (int i = 0; i < n; i++) {
+            if (!p[i].completed && p[i].arrival <= time && p[i].priority < highest_priority) {
+                highest_priority = p[i].priority;
+                idx = i;
+            }
+        }
+        if (idx != -1) {
+            p[idx].start = time;
+            gantt[g_index] = p[idx].pid;
+            gantt_time[g_index++] = time;
+       time += p[idx].burst1 + io_wait + p[idx].burst2;
+            p[idx].completion = time;
+            p[idx].turnaround = p[idx].completion - p[idx].arrival;
+            p[idx].waiting = p[idx].turnaround - (p[idx].burst1 + p[idx].burst2 + io_wait);
+            p[idx].completed = true;
+            completed++;
+        } else {
+            time++; // Idle time
+        }
+    }
+    printf("\n📊 Gantt Chart:\n");
+    for (int i = 0; i < g_index; i++) {
+        printf("| P%d @ %d ", gantt[i], gantt_time[i]);
+    }
+    printf("|\n");
+    float total_tat = 0, total_wt = 0;
+    printf("\n🧮 Process Details:\n");
+    printf("PID\tArrival\tBurst1\tBurst2\tPriority\tCT\tTAT\tWT\n");
+    for (int i = 0; i < n; i++) {
+        printf("P%d\t%d\t%d\t%d\t%d\t\t%d\t%d\t%d\n", p[i].pid, p[i].arrival, p[i].burst1, p[i].burst2,
+               p[i].priority, p[i].completion, p[i].turnaround, p[i].waiting);
+        total_tat += p[i].turnaround;
+        total_wt += p[i].waiting;
+    }
+    printf("\n📈 Average Turnaround Time: %.2f\n", total_tat / n);
+    printf("📉 Average Waiting Time: %.2f\n", total_wt / n);
+return 0;
+}
+

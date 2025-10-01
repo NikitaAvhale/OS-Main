@@ -1,0 +1,143 @@
+Q.1Write a program to create child process using fork().The parent should gotosleep state and
+ child process should begin its execution. In the child process, use execl() to execute the ls"
+ command.
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdlib.h>
+
+int main() {
+    pid_t pid;
+
+    pid = fork();  // Create child process
+
+    if (pid < 0) {
+        perror("Fork failed");
+        exit(1);
+    }
+    else if (pid == 0) {
+        
+        printf("Child process executing 'ls' command:\n");
+        execl("/bin/ls", "ls", "-l", NULL);  // Replace child with ls
+        perror("execl failed");  // Only runs if execl fails
+    }
+    else {
+                printf("Parent process going to sleep...\n");
+        sleep(5);  // Sleep for 5 seconds
+        printf("Parent process woke up.\n");
+    }
+
+    return 0;
+}
+
+ Q.2 Writethe program to simulate Round Robin (RR)scheduling. The arrival timeand first CPU
+ burst for different n number of processes should be input to the algorithm. Also give the time
+ quantum as input. Assume the fixed IO waiting time (2 units). The next CPU-burst should be
+ generated randomly.Theoutput should giveGanttchart, turnaround timeand waiting timeforeach
+ process. Also find the averagewaiting time and turnaround time.
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX 10
+#define IO_WAIT 2
+
+typedef struct {
+    int pid;
+    int arrival;
+    int cpu1;
+    int cpu2;
+    int remaining;
+    int finish;
+    int turnaround;
+    int waiting;
+    int started;
+    int io_done;
+} Process;
+
+int main() {
+    Process p[MAX];
+    int n, tq, i, time = 0, completed = 0;
+    float avg_tat = 0, avg_wt = 0;
+
+    srand(time(NULL)); // Seed for random CPU2 burst
+
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+
+    printf("Enter Time Quantum: ");
+    scanf("%d", &tq);
+
+    // Input arrival and first CPU burst
+    for (i = 0; i < n; i++) {
+        p[i].pid = i;
+        printf("Process P%d - Arrival Time: ", i);
+        scanf("%d", &p[i].arrival);
+        printf("Process P%d - First CPU Burst: ", i);
+        scanf("%d", &p[i].cpu1);
+        p[i].cpu2 = rand() % 5 + 1; // Random burst between 1–5
+        p[i].remaining = p[i].cpu1;
+        p[i].started = 0;
+        p[i].io_done = 0;
+    }
+
+    int queue[MAX], front = 0, rear = 0;
+    int gantt[MAX * 10], gindex = 0;
+
+    while (completed < n) {
+        // Add arrived processes to queue
+        for (i = 0; i < n; i++) {
+            if (p[i].arrival <= time && p[i].started == 0) {
+                queue[rear++] = i;
+                p[i].started = 1;
+            }
+        }
+
+        if (front == rear) {
+            time++;
+            continue;
+        }
+
+        int idx = queue[front++];
+        if (p[idx].remaining > tq) {
+            gantt[gindex++] = p[idx].pid;
+            time += tq;
+            p[idx].remaining -= tq;
+            queue[rear++] = idx;
+        } else {
+            gantt[gindex++] = p[idx].pid;
+            time += p[idx].remaining;
+            p[idx].remaining = 0;
+
+            // Simulate I/O wait and second CPU burst
+            time += IO_WAIT;
+            time += p[idx].cpu2;
+
+            p[idx].finish = time;
+            p[idx].turnaround = p[idx].finish - p[idx].arrival;
+            p[idx].waiting = p[idx].turnaround - (p[idx].cpu1 + p[idx].cpu2 + IO_WAIT);
+            avg_tat += p[idx].turnaround;
+            avg_wt += p[idx].waiting;
+            completed++;
+        }
+    }
+
+    // Gantt Chart
+    printf("\nGantt Chart:\n| ");
+    for (i = 0; i < gindex; i++) {
+        printf("P%d | ", gantt[i]);
+    }
+
+    // Output Table
+    printf("\n\n%-5s %-8s %-8s %-8s %-8s %-8s %-8s\n", "PID", "Arrival", "CPU1", "CPU2", "Finish", "TAT", "WT");
+    for (i = 0; i < n; i++) {
+        printf("%-5d %-8d %-8d %-8d %-8d %-8d %-8d\n",
+               p[i].pid, p[i].arrival, p[i].cpu1, p[i].cpu2,
+               p[i].finish, p[i].turnaround, p[i].waiting);
+    }
+
+    printf("\nAverage Turnaround Time: %.2f", avg_tat / n);
+    printf("\nAverage Waiting Time: %.2f\n", avg_wt / n);
+
+    return 0;
+}
